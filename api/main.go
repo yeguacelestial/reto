@@ -19,7 +19,6 @@ type User struct {
 var Users []User
 
 func main() {
-
 	// Create User
 	defaultUser := User{
 		Email:    "demo@usuario.com",
@@ -28,6 +27,7 @@ func main() {
 
 	Users = append(Users, defaultUser)
 
+	fmt.Println("[*] REST API - Mux Router")
 	router := Router()
 	log.Fatal(http.ListenAndServe(":10000", router))
 }
@@ -54,7 +54,7 @@ func LoginEndpoint(w http.ResponseWriter, r *http.Request) {
 	var user User
 	json.Unmarshal(reqBody, &user)
 
-	k, found := Find(Users, user)
+	k, found := FindUser(Users, user)
 
 	if !found {
 		fmt.Printf("[-] Invalid User or password.\n")
@@ -63,8 +63,8 @@ func LoginEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Verify if user is registered in the database (slice)
-func Find(slice []User, val User) (int, bool) {
+// Verify if user is registered in the 'database' (slice)
+func FindUser(slice []User, val User) (int, bool) {
 	for i, item := range slice {
 		if item == val {
 			return i, true
