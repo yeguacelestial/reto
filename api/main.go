@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/bitly/go-simplejson"
+
 	"github.com/gorilla/mux"
 )
 
@@ -15,11 +17,26 @@ type User struct {
 	Password string `json:"Password"`
 }
 
+type ResponseContent struct {
+	Message     string `json:"Message"`
+	Description string `json:"Description"`
+	Data        string `json:"Data"`
+}
+
 // Global Users slice. Simulates a database.
 var Users []User
 
+var port string = ":10000"
+
 func main() {
-	// Create User
+	fmt.Println("[*] REST API - Mux Router")
+	fmt.Println("[*] Serving on port " + port + "\n")
+	router := Router()
+	log.Fatal(http.ListenAndServe(port, router))
+}
+
+func Router() *mux.Router {
+	// Create default User
 	defaultUser := User{
 		Email:    "demo@usuario.com",
 		Password: "pipjY7-guknaq-nancex",
@@ -27,12 +44,9 @@ func main() {
 
 	Users = append(Users, defaultUser)
 
-	fmt.Println("[*] REST API - Mux Router")
-	router := Router()
-	log.Fatal(http.ListenAndServe(":10000", router))
-}
+	fmt.Println("[*] Created default user on database with email: " + defaultUser.Email)
 
-func Router() *mux.Router {
+	// Init router
 	router := mux.NewRouter().StrictSlash(true)
 
 	router.HandleFunc("/", RootEndpoint).Methods("GET")
@@ -46,9 +60,9 @@ func RootEndpoint(response http.ResponseWriter, request *http.Request) {
 	response.Write([]byte("Hello World"))
 }
 
-func LoginEndpoint(w http.ResponseWriter, r *http.Request) {
+func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
 	// get the body of our POST request
-	reqBody, _ := ioutil.ReadAll(r.Body)
+	reqBody, _ := ioutil.ReadAll(request.Body)
 
 	// Unmarshal this into new User struct
 	var user User
@@ -56,10 +70,43 @@ func LoginEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	k, found := FindUser(Users, user)
 
+	jsonData := simplejson.New()
+
+	// If user is validated, returns a JWT response with the email, and the secret word.
 	if !found {
-		fmt.Printf("[-] Invalid User or password.\n")
+
+		response.WriteHeader(401)
+
+		// Set the JSON Body values
+		response.Header().Set("Content-Type", "application/json")
+		jsonData.Set("message", "error")
+		jsonData.Set("description", "invalid email or password")
+		jsonData.Set("email", user.Email)
+		jsonData.Set("password", user.Password)
+
+		payload, err := jsonData.MarshalJSON()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		response.Write(payload)
+
+		// Else, returns an error indicating that the user is not valid.
 	} else {
-		fmt.Printf("[+] User with email %s is registered in the db. (Index: %d)\n", Users[k].Email, k)
+		response.WriteHeader(200)
+
+		// Set the JSON Body values
+		response.Header().Set("Content-Type", "application/json")
+		jsonData.Set("message", "success")
+		jsonData.Set("description", "logged in successfully")
+		jsonData.Set("email", Users[k].Email)
+
+		payload, err := jsonData.MarshalJSON()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		response.Write(payload)
 	}
 }
 

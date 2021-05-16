@@ -3,17 +3,13 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-)
-
-const (
-	userEmail string = "demo@usuario.com"
-	password  string = "pipjY7-guknaq-nancex"
 )
 
 func handleErr(err error) {
@@ -34,19 +30,27 @@ func TestRootEndpoint(t *testing.T) {
 
 // Login with default email & password
 func TestLoginEndpoint(t *testing.T) {
-	values := map[string]string{
-		"userEmail": userEmail,
-		"password":  password,
+	jsonStr := User{
+		Email:    "demo@usuario.com",
+		Password: "pipjY7-guknaq-nancex",
 	}
-	json_data, err := json.Marshal(values)
+
+	bJson, err := json.Marshal(jsonStr)
 	handleErr(err)
 
-	resp, err := http.NewRequest("POST", "/login", bytes.NewBuffer(json_data))
+	request, err := http.NewRequest("POST", "/login", bytes.NewBuffer(bJson))
 	handleErr(err)
 
-	var res map[string]interface{}
+	response := httptest.NewRecorder()
 
-	json.NewDecoder(resp.Body).Decode(&res)
+	Router().ServeHTTP(response, request)
 
-	assert.Equal(t, "", res["json"], "TODO: Fix test and create endpoint")
+	fmt.Print(response.Body.String())
+
+	assert.Equal(t, 200, response.Code, "Expected 200, got another HTTP Code.")
+}
+
+// Send a link, and retrieve a .csv file with all the links in the HTML
+func TestGetLinksEndpoint(t *testing.T) {
+	assert.Equal(t, "GetLinks", "GetLinksEndpoint", "TODO: Create get links test and endpoint")
 }

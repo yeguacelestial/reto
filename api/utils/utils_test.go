@@ -17,7 +17,6 @@ func TestParseHtmlFromUrl(t *testing.T) {
 		</body>
 	</html>
 	`
-
 	expectedHtml = RemoveEscapeSquences(expectedHtml)
 
 	receivedHtml := ParseHtmlFromUrl("https://raw.githubusercontent.com/gophercises/link/master/ex1.html")
