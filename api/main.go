@@ -12,20 +12,24 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type Dictionary map[string]interface{}
+
+// Email and password default structure.
 type User struct {
-	Email    string `json:"Email"`
-	Password string `json:"Password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
-type ResponseContent struct {
-	Message     string `json:"Message"`
-	Description string `json:"Description"`
-	Data        string `json:"Data"`
+// 'get-links' endpoint should receive an url and a bearer token
+// for  a valid response.
+type Link struct {
+	Url string `json:"Url"`
 }
 
 // Global Users slice. Simulates a database.
 var Users []User
 
+// Server port
 var port string = ":10000"
 
 func main() {
@@ -49,15 +53,11 @@ func Router() *mux.Router {
 	// Init router
 	router := mux.NewRouter().StrictSlash(true)
 
-	router.HandleFunc("/", RootEndpoint).Methods("GET")
+	// Handle endpoints
 	router.HandleFunc("/login", LoginEndpoint).Methods("POST")
+	router.HandleFunc("/get-links", GetLinksEndpoint).Methods("POST")
 
 	return router
-}
-
-func RootEndpoint(response http.ResponseWriter, request *http.Request) {
-	response.WriteHeader(200)
-	response.Write([]byte("Hello World"))
 }
 
 func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
@@ -72,17 +72,21 @@ func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
 
 	jsonData := simplejson.New()
 
-	// If user is validated, returns a JWT response with the email, and the secret word.
-	if !found {
+	if !found && k == -1 {
 
 		response.WriteHeader(401)
+
+		data := []Dictionary{
+			{
+				"email": user.Email,
+			},
+		}
 
 		// Set the JSON Body values
 		response.Header().Set("Content-Type", "application/json")
 		jsonData.Set("message", "error")
 		jsonData.Set("description", "invalid email or password")
-		jsonData.Set("email", user.Email)
-		jsonData.Set("password", user.Password)
+		jsonData.Set("data", data)
 
 		payload, err := jsonData.MarshalJSON()
 		if err != nil {
@@ -91,15 +95,21 @@ func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
 
 		response.Write(payload)
 
-		// Else, returns an error indicating that the user is not valid.
+		// Else, returns an error indicating that the user is valid.
 	} else {
 		response.WriteHeader(200)
+
+		data := []Dictionary{
+			{
+				"email": user.Email,
+			},
+		}
 
 		// Set the JSON Body values
 		response.Header().Set("Content-Type", "application/json")
 		jsonData.Set("message", "success")
 		jsonData.Set("description", "logged in successfully")
-		jsonData.Set("email", Users[k].Email)
+		jsonData.Set("data", data)
 
 		payload, err := jsonData.MarshalJSON()
 		if err != nil {
@@ -108,6 +118,10 @@ func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
 
 		response.Write(payload)
 	}
+}
+
+func GetLinksEndpoint(response http.ResponseWriter, request *http.Request) {
+	fmt.Println("Hello world")
 }
 
 // Verify if user is registered in the 'database' (slice)
