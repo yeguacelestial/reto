@@ -9,8 +9,8 @@ import (
 
 // Represents a link in an HTML document
 type Link struct {
-	Href string
 	Text string
+	Href string
 }
 
 // Parse will take an HTML document and will return a slice of

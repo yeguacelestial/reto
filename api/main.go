@@ -141,10 +141,22 @@ func GetLinksEndpoint(response http.ResponseWriter, request *http.Request) {
 	htmlLinks, err := getlinks.ParseLinksFromHtmlReader(htmlStringReader)
 	utils.HandleErr(err)
 
-	// 4. Convert slice of links and texts to a csv file
-	fmt.Println(htmlLinks)
+	var excelRows [][]map[string]string
+	excelRows = utils.ArrayForExcel(excelRows, "TEXT", "HREF")
 
-	// 5. Add file to response
+	// 4. Iterate on the slice of Link struct
+	for i := 0; i < len(htmlLinks); i++ {
+		tagText := htmlLinks[i].Text
+		tagHref := htmlLinks[i].Href
+
+		excelRows = utils.ArrayForExcel(excelRows, tagText, tagHref)
+	}
+
+	// 5. Convert struct of links and texts to a xlsx file
+	f := utils.CreateSheet(nil, "Challenge", excelRows)
+	utils.CreateExcel(f, "extractedLinks.xlsx")
+
+	// 6. Add file to response
 }
 
 // Verify if user is registered in the 'database' (users slice)

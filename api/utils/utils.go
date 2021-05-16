@@ -1,16 +1,16 @@
 package utils
 
 import (
-	"encoding/csv"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
+
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
 func ParseHtmlFromUrl(url string) string {
-	fmt.Printf("Parsing HTML from %s ...\n", url)
+	fmt.Printf("[*] Parsing HTML from %s ...\n", url)
 
 	res, err := http.Get(url)
 
@@ -28,22 +28,61 @@ func ParseHtmlFromUrl(url string) string {
 	return string(html)
 }
 
-// Reads a two-dimensional slice of strings and turn it into a csv file.
+// Reads a two-dimensional slice of strings and turn it into a xlsx file.
 // Returns the url where the file can be downloaded.
-func LinksToCsv(filename string, links [][]string) string {
-	file, err := os.Create(filename)
-	HandleErr(err)
-	defer file.Close()
+func LinksToXlsx(filename string, links [][]string) string {
+	// Create new xlsx file
+	return "Hello world"
+}
 
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
+// Creates an Excel file on a given directory
+func CreateExcel(f *excelize.File, dir string) {
+	if err := f.SaveAs(dir); err != nil {
+		fmt.Println(err)
+	}
+}
 
-	for _, value := range links {
-		err := writer.Write(value)
-		HandleErr(err)
+// Creates a row with data, on a given sheet
+func CreateSheet(f *excelize.File, sheetName string, data [][]map[string]string) *excelize.File {
+	if f == nil {
+		f = excelize.NewFile()
 	}
 
-	return filename
+	index := f.NewSheet(sheetName)
+	f.SetActiveSheet(index)
+
+	for _, col := range data {
+		for _, row := range col {
+			for index, value := range row {
+				f.SetCellValue(sheetName, index, value)
+			}
+		}
+	}
+
+	return f
+}
+
+// Receives a string map and multiple string values as input, and appends data to
+// the last available rows.
+func ArrayForExcel(file [][]map[string]string, row ...string) [][]map[string]string {
+	var data []map[string]string
+	var ExcelRow map[string]string = make(map[string]string)
+
+	col := []string{
+		"A", "B", "C", "D", "E", "F", "G",
+		"H", "I", "J", "K", "L", "M", "N",
+		"O", "P", "Q", "R", "S", "T", "U",
+		"X", "Y", "Z"}
+
+	for index, value := range row {
+		ExcelCol := col[index] + fmt.Sprint(len(file)+1)
+		ExcelRow[ExcelCol] = value
+		data = append(data, ExcelRow)
+	}
+
+	file = append(file, data)
+
+	return file
 }
 
 func HandleErr(err error) {
