@@ -6,8 +6,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/bitly/go-simplejson"
+	"github.com/yeguacelestial/reto/getlinks"
+	"github.com/yeguacelestial/reto/utils"
 
 	"github.com/gorilla/mux"
 )
@@ -22,7 +25,7 @@ type User struct {
 
 // 'get-links' endpoint should receive an url and a bearer token
 // for  a valid response.
-type Link struct {
+type GetLinksRequestBody struct {
 	Url string `json:"Url"`
 }
 
@@ -121,12 +124,32 @@ func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
 }
 
 func GetLinksEndpoint(response http.ResponseWriter, request *http.Request) {
-	fmt.Println("Hello world")
+	// 1. Read the url from the response
+	reqBody, _ := ioutil.ReadAll(request.Body)
+
+	// Unmarshal this into new User struct
+	var link GetLinksRequestBody
+	json.Unmarshal(reqBody, &link)
+
+	url := link.Url
+
+	// 2. Parse html from the url string
+	htmlString := utils.ParseHtmlFromUrl(url)
+	htmlStringReader := strings.NewReader(htmlString)
+
+	// 3. Extract all the links from the html
+	htmlLinks, err := getlinks.ParseLinksFromHtmlReader(htmlStringReader)
+	utils.HandleErr(err)
+
+	// 4. Convert slice of links and texts to a csv file
+	fmt.Println(htmlLinks)
+
+	// 5. Add file to response
 }
 
-// Verify if user is registered in the 'database' (slice)
-func FindUser(slice []User, val User) (int, bool) {
-	for i, item := range slice {
+// Verify if user is registered in the 'database' (users slice)
+func FindUser(users []User, val User) (int, bool) {
+	for i, item := range users {
 		if item == val {
 			return i, true
 		}

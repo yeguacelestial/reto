@@ -3,19 +3,13 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/yeguacelestial/reto/utils"
 )
-
-func handleErr(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 
 // Valid login with correct email & password
 func TestValidLoginEndpoint(t *testing.T) {
@@ -25,10 +19,10 @@ func TestValidLoginEndpoint(t *testing.T) {
 	}
 
 	bJson, err := json.Marshal(userData)
-	handleErr(err)
+	utils.HandleErr(err)
 
 	request, err := http.NewRequest("POST", "/login", bytes.NewBuffer(bJson))
-	handleErr(err)
+	utils.HandleErr(err)
 
 	response := httptest.NewRecorder()
 
@@ -48,10 +42,10 @@ func TestInvalidLoginEndpoint(t *testing.T) {
 	}
 
 	bJson, err := json.Marshal(userData)
-	handleErr(err)
+	utils.HandleErr(err)
 
 	request, err := http.NewRequest("POST", "/login", bytes.NewBuffer(bJson))
-	handleErr(err)
+	utils.HandleErr(err)
 
 	response := httptest.NewRecorder()
 
@@ -66,15 +60,15 @@ func TestInvalidLoginEndpoint(t *testing.T) {
 // Send a link, and retrieve a .csv file with all the links in the HTML
 func TestGetLinksEndpoint(t *testing.T) {
 	// Create a JSON body with a URL
-	getLinksBody := Link{
+	getLinksBody := GetLinksRequestBody{
 		Url: "https://raw.githubusercontent.com/gophercises/link/master/ex1.html",
 	}
 
 	bJson, err := json.Marshal(getLinksBody)
-	handleErr(err)
+	utils.HandleErr(err)
 
 	request, err := http.NewRequest("POST", "/get-links", bytes.NewBuffer(bJson))
-	handleErr(err)
+	utils.HandleErr(err)
 
 	response := httptest.NewRecorder()
 
