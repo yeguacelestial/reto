@@ -36,10 +36,12 @@ func LinksToXlsx(filename string, links [][]string) string {
 }
 
 // Creates an Excel file on a given directory
-func CreateExcel(f *excelize.File, dir string) {
+func CreateExcel(f *excelize.File, dir string) *excelize.File {
 	if err := f.SaveAs(dir); err != nil {
 		fmt.Println(err)
 	}
+
+	return f
 }
 
 // Creates a row with data, on a given sheet

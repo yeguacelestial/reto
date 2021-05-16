@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/bitly/go-simplejson"
@@ -157,6 +159,17 @@ func GetLinksEndpoint(response http.ResponseWriter, request *http.Request) {
 	utils.CreateExcel(f, "extractedLinks.xlsx")
 
 	// 6. Add file to response
+	response.Header().Set("Content-Type", "application/octet-stream")
+	response.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote("extractedLinks.xlsx"))
+
+	// 7. Serve file
+	http.ServeFile(response, request, "extractedLinks.xlsx")
+
+	// Remove file
+	e := os.Remove("extractedLinks.xlsx")
+	if e != nil {
+		log.Fatal(e)
+	}
 }
 
 // Verify if user is registered in the 'database' (users slice)
