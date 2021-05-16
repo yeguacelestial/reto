@@ -74,7 +74,7 @@ func TestGetLinksEndpoint(t *testing.T) {
 
 	Router().ServeHTTP(response, request)
 
-	expectedResponseBody := `{"data":[{"file":"path_to_file.csv"}],"description":"generated csv file","message":"success"}`
+	expectedResponse := "attachment; filename=\"extractedLinks.xlsx\""
 
-	assert.Equal(t, expectedResponseBody, response.Body.String(), "Unexpected JSON Body.")
+	assert.Equal(t, expectedResponse, response.Header().Get("Content-Disposition"), "Expected a downloaded file, received another type")
 }
