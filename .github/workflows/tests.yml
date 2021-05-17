@@ -23,6 +23,4 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
     - name: Test
-      run: cd api
-      run: go mod tidy
-      run: go test .
+      run: cd api;go mod tidy;go test .
