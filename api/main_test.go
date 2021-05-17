@@ -88,6 +88,33 @@ func TestAuthorizedGetLinksEndpoint(t *testing.T) {
 	assert.Equal(t, 200, response.Code, "Expected 200, got another HTTP Code.")
 }
 
+func TestAuthorizedButHtmlWithoutLinksGetLinksEndpoint(t *testing.T) {
+	// Create a JSON body with a URL
+	getLinksBody := GetLinksRequestBody{
+		Url: "https://raw.githubusercontent.com/yeguacelestial/software-report-generator/master/.gitignore",
+	}
+
+	bJson, err := json.Marshal(getLinksBody)
+	utils.HandleErr(err)
+
+	request, err := http.NewRequest("POST", "/get-links", bytes.NewBuffer(bJson))
+	utils.HandleErr(err)
+
+	token, err := login.GenerateJWT(validUserData.Email, validUserData.Password)
+	utils.HandleErr(err)
+
+	bearer := "Bearer " + token
+
+	// Add JWT
+	request.Header.Add("Authorization", bearer)
+
+	response := httptest.NewRecorder()
+
+	Router().ServeHTTP(response, request)
+
+	assert.Equal(t, 409, response.Code, "Expected 409, got another HTTP Code.")
+}
+
 // Calling get-links endpoint without a JWT
 func TestUnauthorizedGetLinksEndpoint(t *testing.T) {
 	// Create a JSON body with a URL

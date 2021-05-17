@@ -25,7 +25,7 @@ func IsAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handle
 		reqToken := r.Header.Get("Authorization")
 
 		// Validates if token header is set
-		if reqToken != "" && strings.Contains(reqToken, "Bearer") {
+		if reqToken != "" && strings.Contains(reqToken, "Bearer") && len(reqToken) == 218 {
 			// Extract token
 			splitToken := strings.Split(reqToken, "Bearer ")
 			reqToken = splitToken[1]
@@ -59,14 +59,14 @@ func IsAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handle
 			w.Header().Set("Content-Type", "application/json")
 			jsonData.Set("message", "error")
 			jsonData.Set("description", "not authorized")
-		}
 
-		payload, err := jsonData.MarshalJSON()
-		if err != nil {
-			log.Fatal(err)
-		}
+			payload, err := jsonData.MarshalJSON()
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		w.Write(payload)
+			w.Write(payload)
+		}
 	})
 }
 

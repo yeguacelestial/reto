@@ -156,32 +156,52 @@ func GetLinksEndpoint(response http.ResponseWriter, request *http.Request) {
 	htmlLinks, err := getlinks.ParseLinksFromHtmlReader(htmlStringReader)
 	utils.HandleErr(err)
 
-	var excelRows [][]map[string]string
-	excelRows = utils.ArrayForExcel(excelRows, "TEXT", "HREF")
+	// If the page has more than 0 links...
+	if len(htmlLinks) > 0 {
+		var excelRows [][]map[string]string
+		excelRows = utils.ArrayForExcel(excelRows, "TEXT", "HREF")
 
-	// 4. Iterate on the slice of Link struct
-	for i := 0; i < len(htmlLinks); i++ {
-		tagText := htmlLinks[i].Text
-		tagHref := htmlLinks[i].Href
+		// 4. Iterate on the slice of Link struct
+		for i := 0; i < len(htmlLinks); i++ {
+			tagText := htmlLinks[i].Text
+			tagHref := htmlLinks[i].Href
 
-		excelRows = utils.ArrayForExcel(excelRows, tagText, tagHref)
-	}
+			excelRows = utils.ArrayForExcel(excelRows, tagText, tagHref)
+		}
 
-	// 5. Convert struct of links and texts to a xlsx file
-	f := utils.CreateSheet(nil, "Challenge", excelRows)
-	utils.CreateExcel(f, "extractedLinks.xlsx")
+		// 5. Convert struct of links and texts to a xlsx file
+		f := utils.CreateSheet(nil, "Challenge", excelRows)
+		utils.CreateExcel(f, "extractedLinks.xlsx")
 
-	// 6. Add file to response
-	response.Header().Set("Content-Type", "application/octet-stream")
-	response.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote("extractedLinks.xlsx"))
+		// 6. Add file to response
+		response.Header().Set("Content-Type", "application/octet-stream")
+		response.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote("extractedLinks.xlsx"))
 
-	// 7. Serve file
-	http.ServeFile(response, request, "extractedLinks.xlsx")
+		// 7. Serve file
+		http.ServeFile(response, request, "extractedLinks.xlsx")
 
-	// Remove file
-	e := os.Remove("extractedLinks.xlsx")
-	if e != nil {
-		log.Fatal(e)
+		// Remove file
+		e := os.Remove("extractedLinks.xlsx")
+		if e != nil {
+			log.Fatal(e)
+		}
+
+		// Else if the page doesnt have any link on it
+	} else {
+		jsonData := simplejson.New()
+
+		// Set the JSON Body values
+		response.WriteHeader(409)
+		response.Header().Set("Content-Type", "application/json")
+		jsonData.Set("message", "error")
+		jsonData.Set("description", "couldn't find anchor tags on the html")
+
+		payload, err := jsonData.MarshalJSON()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		response.Write(payload)
 	}
 }
 
