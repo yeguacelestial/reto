@@ -1,5 +1,13 @@
-on: [push, pull_request]
 name: tests
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
 jobs:
   test:
     strategy:
