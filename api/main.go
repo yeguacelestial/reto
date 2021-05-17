@@ -12,6 +12,7 @@ import (
 
 	"github.com/bitly/go-simplejson"
 	"github.com/yeguacelestial/reto/getlinks"
+	"github.com/yeguacelestial/reto/login"
 	"github.com/yeguacelestial/reto/utils"
 
 	"github.com/gorilla/mux"
@@ -25,14 +26,14 @@ type User struct {
 	Password string `json:"password"`
 }
 
+// Global Users slice. Simulates a database.
+var Users []User
+
 // 'get-links' endpoint should receive an url and a bearer token
 // for  a valid response.
 type GetLinksRequestBody struct {
 	Url string `json:"Url"`
 }
-
-// Global Users slice. Simulates a database.
-var Users []User
 
 // Server port
 var port string = ":10000"
@@ -58,11 +59,15 @@ func Router() *mux.Router {
 	// Init router
 	router := mux.NewRouter().StrictSlash(true)
 
-	// Handle endpoints
-	router.HandleFunc("/login", LoginEndpoint).Methods("POST")
-	router.HandleFunc("/get-links", GetLinksEndpoint).Methods("POST")
+	handleRequests(router)
 
 	return router
+}
+
+// Handle each request from router
+func handleRequests(router *mux.Router) {
+	router.HandleFunc("/login", LoginEndpoint).Methods("POST")
+	router.Handle("/get-links", login.IsAuthorized(GetLinksEndpoint)).Methods("POST")
 }
 
 func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
@@ -77,9 +82,10 @@ func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
 
 	jsonData := simplejson.New()
 
+	// If user was not found in database...
 	if !found && k == -1 {
 
-		response.WriteHeader(401)
+		response.WriteHeader(400)
 
 		data := []Dictionary{
 			{
@@ -104,9 +110,16 @@ func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
 	} else {
 		response.WriteHeader(200)
 
+		validToken, err := login.GenerateJWT(user.Email, user.Password)
+		if err != nil {
+			fmt.Println("[-] Error generating JWT => ", err.Error())
+		}
+
 		data := []Dictionary{
 			{
-				"email": user.Email,
+				"email":    user.Email,
+				"password": user.Password,
+				"token":    validToken,
 			},
 		}
 

@@ -53,11 +53,11 @@ func TestInvalidLoginEndpoint(t *testing.T) {
 
 	expectedResponseBody := `{"data":[{"email":"invalid@usuario.com"}],"description":"invalid email or password","message":"error"}`
 
-	assert.Equal(t, 401, response.Code, "Expected 401, got another HTTP Code.")
+	assert.Equal(t, 400, response.Code, "Expected 400, got another HTTP Code.")
 	assert.Equal(t, expectedResponseBody, response.Body.String(), "Unexpected response body.")
 }
 
-// Send a link, and retrieve a .csv file with all the links in the HTML
+// Send a link, and retrieve a .xlsx file with all the links in the HTML
 func TestGetLinksEndpoint(t *testing.T) {
 	// Create a JSON body with a URL
 	getLinksBody := GetLinksRequestBody{
