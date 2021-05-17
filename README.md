@@ -1,8 +1,5 @@
 # Reto: API Rest
 
-Hace menos de 7 días, lo único que sabía de Go fue que era un lenguaje hecho por Google. Este proyecto de verdad
-me sirvió no solo para postularme a la vacante de desarrollador, sino también para introducirme a este lenguaje. Sin duda alguna, hoy me encuentro bastante interesado en profundizar mi aprendizaje en Go.
-
 La API fue desarrollada en la versión Go 1.16.4 (go version go1.16.4 linux/amd64).
 
 Se desarrollaron unit tests para casi todo, pero le di enfoque a testear los buenos y peores casos al realizar llamadas a los endpoints.
