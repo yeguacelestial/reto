@@ -33,6 +33,10 @@ Para ver los resultados de los tests, basta con hacer click en la palomita verde
 
 # Probando la API localmente
 
+## Documentación
+
+La API está documentada en el formato `API Blueprint`. Se puede consultar la documentación con ejemplos en el archivo `documentacion.apib`, el cual se encuentra en el directorio raíz del repositorio.
+
 ## Instalar dependencias
 
 Antes de correr el servidor, es necesario instalar las dependencias. Para esto, dentro de la carpeta raíz del proyecto `api/`, se ejecuta el siguiente comando:
