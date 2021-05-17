@@ -24,10 +24,14 @@ type Dictionary map[string]interface{}
 type User struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Token    string `json:"token, omitempty"`
 }
 
 // Global Users slice. Simulates a database.
 var Users []User
+
+// Users with a generated JWT.
+var UsersWithToken []User
 
 // 'get-links' endpoint should receive an url and a bearer token
 // for  a valid response.
@@ -68,6 +72,7 @@ func Router() *mux.Router {
 func handleRequests(router *mux.Router) {
 	router.HandleFunc("/login", LoginEndpoint).Methods("POST")
 	router.Handle("/get-links", login.IsAuthorized(GetLinksEndpoint)).Methods("POST")
+	router.Handle("/me", login.IsAuthorized(MeEndpoint)).Methods("GET")
 }
 
 func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
@@ -84,16 +89,15 @@ func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
 
 	// If user was not found in database...
 	if !found && k == -1 {
-
-		response.WriteHeader(400)
-
 		data := []Dictionary{
 			{
-				"email": user.Email,
+				"email":    user.Email,
+				"password": user.Password,
 			},
 		}
 
 		// Set the JSON Body values
+		response.WriteHeader(400)
 		response.Header().Set("Content-Type", "application/json")
 		jsonData.Set("message", "error")
 		jsonData.Set("description", "invalid email or password")
@@ -108,7 +112,6 @@ func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
 
 		// Else, returns an error indicating that the user is valid.
 	} else {
-		response.WriteHeader(200)
 
 		validToken, err := login.GenerateJWT(user.Email, user.Password)
 		if err != nil {
@@ -123,7 +126,14 @@ func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
 			},
 		}
 
+		UsersWithToken = append(UsersWithToken, User{
+			Email:    user.Email,
+			Password: user.Password,
+			Token:    validToken,
+		})
+
 		// Set the JSON Body values
+		response.WriteHeader(200)
 		response.Header().Set("Content-Type", "application/json")
 		jsonData.Set("message", "success")
 		jsonData.Set("description", "logged in successfully")
@@ -183,6 +193,35 @@ func GetLinksEndpoint(response http.ResponseWriter, request *http.Request) {
 	if e != nil {
 		log.Fatal(e)
 	}
+}
+
+func MeEndpoint(response http.ResponseWriter, request *http.Request) {
+	// Get Authorization header
+	authorizationHeader := request.Header.Get("Authorization")
+
+	// Extract token
+	splitToken := strings.Split(authorizationHeader, "Bearer ")
+	reqToken := splitToken[1]
+
+	claims, ok := login.ExtractClaims(reqToken)
+	if !ok {
+		log.Fatal(ok)
+	}
+
+	// Set the JSON Body values
+	jsonData := simplejson.New()
+
+	response.Header().Set("Content-Type", "application/json")
+	jsonData.Set("message", "success")
+	jsonData.Set("description", "fetched user data from claims")
+	jsonData.Set("data", claims)
+
+	payload, err := jsonData.MarshalJSON()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	response.Write(payload)
 }
 
 // Verify if user is registered in the 'database' (users slice)

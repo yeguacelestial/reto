@@ -23,17 +23,18 @@ func IsAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handle
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		reqToken := r.Header.Get("Authorization")
-		splitToken := strings.Split(reqToken, "Bearer ")
-
-		reqToken = splitToken[1]
 
 		// Validates if token header is set
 		if reqToken != "" {
 
+			// Extract token
+			splitToken := strings.Split(reqToken, "Bearer ")
+			reqToken = splitToken[1]
+
 			// Try to parse the token with HMAC enc algorithm and with signing key
 			token, err := jwt.Parse(reqToken, func(token *jwt.Token) (interface{}, error) {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, fmt.Errorf("There was an error.")
+					return nil, fmt.Errorf("[-] There was an error trying to parse the token with HMAC algorithm.")
 				}
 
 				return mySigningKey, nil
@@ -53,7 +54,6 @@ func IsAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handle
 				endpoint(w, r)
 			}
 		} else {
-
 			w.WriteHeader(401)
 
 			// Set the JSON Body values
@@ -87,4 +87,22 @@ func GenerateJWT(email string, password string) (string, error) {
 	}
 
 	return tokenString, err
+}
+
+// Extract claims from a JWT
+func ExtractClaims(tokenStr string) (jwt.MapClaims, bool) {
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		return mySigningKey, nil
+	})
+
+	if err != nil {
+		return nil, false
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims, true
+	} else {
+		log.Printf("[-] Invalid JWT Token.")
+		return nil, false
+	}
 }
