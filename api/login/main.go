@@ -25,8 +25,7 @@ func IsAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handle
 		reqToken := r.Header.Get("Authorization")
 
 		// Validates if token header is set
-		if reqToken != "" {
-
+		if reqToken != "" && strings.Contains(reqToken, "Bearer") {
 			// Extract token
 			splitToken := strings.Split(reqToken, "Bearer ")
 			reqToken = splitToken[1]

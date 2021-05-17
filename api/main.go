@@ -24,14 +24,10 @@ type Dictionary map[string]interface{}
 type User struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Token    string `json:"token, omitempty"`
 }
 
 // Global Users slice. Simulates a database.
 var Users []User
-
-// Users with a generated JWT.
-var UsersWithToken []User
 
 // 'get-links' endpoint should receive an url and a bearer token
 // for  a valid response.
@@ -125,12 +121,6 @@ func LoginEndpoint(response http.ResponseWriter, request *http.Request) {
 				"token":    validToken,
 			},
 		}
-
-		UsersWithToken = append(UsersWithToken, User{
-			Email:    user.Email,
-			Password: user.Password,
-			Token:    validToken,
-		})
 
 		// Set the JSON Body values
 		response.WriteHeader(200)

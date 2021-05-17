@@ -3,22 +3,36 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/yeguacelestial/reto/login"
 	"github.com/yeguacelestial/reto/utils"
 )
 
+type NormalResponse struct {
+	Data        []map[string]string `json:"data"`
+	Description string              `json:"description"`
+	Message     string              `json:"message"`
+}
+
+var validUserData = User{
+	Email:    "demo@usuario.com",
+	Password: "pipjY7-guknaq-nancex",
+}
+
+var invalidUserData = User{
+	Email:    "invalid@usuario.com",
+	Password: "pipjY7-guknaq-nancex",
+}
+
 // Valid login with correct email & password
 func TestValidLoginEndpoint(t *testing.T) {
-	userData := User{
-		Email:    "demo@usuario.com",
-		Password: "pipjY7-guknaq-nancex",
-	}
 
-	bJson, err := json.Marshal(userData)
+	bJson, err := json.Marshal(validUserData)
 	utils.HandleErr(err)
 
 	request, err := http.NewRequest("POST", "/login", bytes.NewBuffer(bJson))
@@ -28,20 +42,12 @@ func TestValidLoginEndpoint(t *testing.T) {
 
 	Router().ServeHTTP(response, request)
 
-	expectedResponseBody := `{"data":[{"email":"demo@usuario.com"}],"description":"logged in successfully","message":"success"}`
-
 	assert.Equal(t, 200, response.Code, "Expected 200, got another HTTP Code.")
-	assert.Equal(t, expectedResponseBody, response.Body.String(), "Unexpected response body.")
 }
 
 // Valid login with correct email & password
 func TestInvalidLoginEndpoint(t *testing.T) {
-	userData := User{
-		Email:    "invalid@usuario.com",
-		Password: "pipjY7-guknaq-nancex",
-	}
-
-	bJson, err := json.Marshal(userData)
+	bJson, err := json.Marshal(invalidUserData)
 	utils.HandleErr(err)
 
 	request, err := http.NewRequest("POST", "/login", bytes.NewBuffer(bJson))
@@ -51,14 +57,39 @@ func TestInvalidLoginEndpoint(t *testing.T) {
 
 	Router().ServeHTTP(response, request)
 
-	expectedResponseBody := `{"data":[{"email":"invalid@usuario.com"}],"description":"invalid email or password","message":"error"}`
-
 	assert.Equal(t, 400, response.Code, "Expected 400, got another HTTP Code.")
-	assert.Equal(t, expectedResponseBody, response.Body.String(), "Unexpected response body.")
 }
 
 // Send a link, and retrieve a .xlsx file with all the links in the HTML
-func TestGetLinksEndpoint(t *testing.T) {
+func TestAuthorizedGetLinksEndpoint(t *testing.T) {
+	// Create a JSON body with a URL
+	getLinksBody := GetLinksRequestBody{
+		Url: "https://raw.githubusercontent.com/gophercises/link/master/ex1.html",
+	}
+
+	bJson, err := json.Marshal(getLinksBody)
+	utils.HandleErr(err)
+
+	request, err := http.NewRequest("POST", "/get-links", bytes.NewBuffer(bJson))
+	utils.HandleErr(err)
+
+	token, err := login.GenerateJWT(validUserData.Email, validUserData.Password)
+	utils.HandleErr(err)
+
+	bearer := "Bearer " + token
+
+	// Add JWT
+	request.Header.Add("Authorization", bearer)
+
+	response := httptest.NewRecorder()
+
+	Router().ServeHTTP(response, request)
+
+	assert.Equal(t, 200, response.Code, "Expected 200, got another HTTP Code.")
+}
+
+// Calling get-links endpoint without a JWT
+func TestUnauthorizedGetLinksEndpoint(t *testing.T) {
 	// Create a JSON body with a URL
 	getLinksBody := GetLinksRequestBody{
 		Url: "https://raw.githubusercontent.com/gophercises/link/master/ex1.html",
@@ -74,7 +105,71 @@ func TestGetLinksEndpoint(t *testing.T) {
 
 	Router().ServeHTTP(response, request)
 
-	expectedResponse := "attachment; filename=\"extractedLinks.xlsx\""
+	assert.Equal(t, 401, response.Code, "Expected 200, got another HTTP Code.")
+}
 
-	assert.Equal(t, expectedResponse, response.Header().Get("Content-Disposition"), "Expected a downloaded file, received another type")
+// Get the claims of a JWT token
+func TestValidMeEndpoint(t *testing.T) {
+	bJson, err := json.Marshal(validUserData)
+	utils.HandleErr(err)
+
+	loginRequest, err := http.NewRequest("POST", "/login", bytes.NewBuffer(bJson))
+	utils.HandleErr(err)
+
+	loginResponse := httptest.NewRecorder()
+
+	Router().ServeHTTP(loginResponse, loginRequest)
+
+	loginReqBody, _ := ioutil.ReadAll(loginResponse.Body)
+
+	var normalResponse NormalResponse
+	json.Unmarshal(loginReqBody, &normalResponse)
+
+	authToken := normalResponse.Data[0]["token"]
+
+	bearer := "Bearer " + authToken
+
+	meRequest, err := http.NewRequest("GET", "/me", nil)
+	utils.HandleErr(err)
+
+	// Add JWT
+	meRequest.Header.Add("Authorization", bearer)
+
+	meResponse := httptest.NewRecorder()
+
+	Router().ServeHTTP(meResponse, meRequest)
+
+	assert.Equal(t, 200, meResponse.Code, "Expected 200, got another HTTP Code.")
+}
+
+func TestEmptyTokenMeEndpoint(t *testing.T) {
+	bearer := ""
+
+	meRequest, err := http.NewRequest("GET", "/me", nil)
+	utils.HandleErr(err)
+
+	// Add JWT
+	meRequest.Header.Add("Authorization", bearer)
+
+	meResponse := httptest.NewRecorder()
+
+	Router().ServeHTTP(meResponse, meRequest)
+
+	assert.Equal(t, 401, meResponse.Code, "Expected 200, got another HTTP Code.")
+}
+
+func TestRandomTokenMeEndpoint(t *testing.T) {
+	bearer := "12345"
+
+	meRequest, err := http.NewRequest("GET", "/me", nil)
+	utils.HandleErr(err)
+
+	// Add JWT
+	meRequest.Header.Add("Authorization", bearer)
+
+	meResponse := httptest.NewRecorder()
+
+	Router().ServeHTTP(meResponse, meRequest)
+
+	assert.Equal(t, 401, meResponse.Code, "Expected 200, got another HTTP Code.")
 }
