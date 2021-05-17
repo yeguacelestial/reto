@@ -1,0 +1,128 @@
+FORMAT: 1A
+
+# Reto - Documentación
+
+Documentación de la API desarrollada para la vacante de Backend.
+
+La URL base de todos los endpoints al ejecutarse en un entorno local es la siguiente:
+
+`http://127.0.0.1:10000`
+
+Los únicos de datos de identificación que funcionan contra la API son los siguientes:
+
+```javascript
+{
+    "email": "demo@usuario.com",
+    "password": "pipjY7-guknaq-nancex",
+}
+```
+
+## Iniciar sesión [/login]
+
+### Iniciar sesion con correo y contraseña [POST]
+
+La base de datos es simulada. No se aceptan registros nuevos, por lo que solo se puede autenticarse con los datos del ejemplo.
+
+Cada que se menciona la palabra "token", se hace alusión a los JWTs.
+
+Si los datos son verificados correctamente, esta acción regresa el codigo de estado 200, con un JWT en la respuesta, y otros datos indicando que se validó la sesión.
+
+De lo contrario, retornará una respuesta asociada con el código 400.
+
+
+
++ Request (application/json)
+
+    + Body
+
+        {
+            "email": "demo@usuario.com",
+            "password": "pipjY7-guknaq-nancex",
+        }
+
++ Response 200 (application/json)
+
+    + Body
+
+        {"data":[{"email":"demo@usuario.com","password":"pipjY7-guknaq-nancex","token":"<generated-jwt>"}],"description":"logged in successfully","message":"success"}
+
++ Response 400
+
+    + Body
+        {"data":[{"email":"invalido@usuario.com","password":"nanex"}],"description":"invalid email or password","message":"error"}
+
+
+## Obtener datos del usuario activo [/me]
+
+### Obtener claims del usuario asociado [GET]
+
+Es posible obtener los claims asociados a un JWT generado previamente. Para esto, basta con mandar como `Authorization: Bearer <token>` el token asociado a la cuenta.
+
+Si el token es validado correctamente, se obtendrá el una respuesta con el contenido de los claims, con un codigo de 200.
+
+Si se intenta consumir este endpoint con un token incorrecto o invalido, se retornará una respuesta asociada con el codigo 401.
+
++ Request (application/json)
+    + Headers
+        
+        Authorization: Bearer <token>
+
++ Response 200 (application/json)
+
+    + Body
+
+        {
+            "data": {
+                "authorized": true,
+                "email": "demo@usuario.com",
+                "exp": 1621230697,
+                "password": "pipjY7-guknaq-nancex"
+            },
+            "description": "fetched user data from claims",
+            "message": "success"
+        }
+
++ Response 401
+
+    + Body
+
+        {"description":"not authorized","message":"error"}
+
+
+## Descargar archivo Excel con los links de una pagina [/get-links]
+
+### Descargar archivo .xlsx [POST]
+
+Recibe como unico argumento una url, de la cual se extraen todos los links asociados a las etiquetas `<a>`. En la primera columna está el texto de la etiqueta, y en la segunda el attributo `href`.
+
+La respuesta es un codigo 200, y la petición para que el archivo Excel generado se descargue. (Si se utiliza Postman, seleccionar la opción "Send and Download" en lugar de "Save" para que el archivo Excel se descargue).
+
+Si el token de autorizacion no es validado correctamente, se retorna un error con el código 401 asociado.
+
+Si el link enviado en el request no tiene ninguna etiqueta `<a>` en el codigo html, se retorna una respuesta con el codigo 409.
+
++ Request (application/json)
+
+        {
+            "url": "http://example.com/"
+        }
+
++ Response 200 (application/octet-stream)
+
+    + Headers
+
+        Accept-Ranges: bytes
+        Content-Disposition: attachment; filename="extractedLinks.xlsx"
+
+
++ Response 401 (application/json)
+
+    + Body
+
+    {"description":"not authorized","message":"error"}
+
++ Response 409 (application/json)
+
+    + Body
+
+        {"description":"couldn't find anchor tags on the html","message":"error"}
